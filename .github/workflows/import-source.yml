@@ -1,0 +1,53 @@
+name: Import kernel source
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  import:
+    if: github.actor == 'projectannoci'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: Verify and import source
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib, json, pathlib, subprocess
+          meta = json.loads(pathlib.Path("source-import.json").read_text())
+          if meta["device"] != "garnet" or meta["tree"] != "9b59ffa76b95b7189b0f06311fa6f9c51d877db0" or meta["pack_sha256"] != "e1e3a2d1a6f8be980e3c0be8e38afa0fb0aa7c5ceb89629ac0d9d6a790902424":
+              raise SystemExit("Source does not match the approved snapshot")
+          expected = [f"source.pack.part-{i:03d}" for i in range(len(meta["parts"]))]
+          if not expected or meta["parts"] != expected:
+              raise SystemExit("Invalid source part list")
+          digest = hashlib.sha256()
+          with open("/tmp/kernel-source.pack", "wb") as out:
+              for name in expected:
+                  with open(name, "rb") as part:
+                      while chunk := part.read(1024 * 1024):
+                          digest.update(chunk)
+                          out.write(chunk)
+          if digest.hexdigest() != meta["pack_sha256"]:
+              raise SystemExit("Source pack integrity check failed")
+          with open("/tmp/kernel-source.pack", "rb") as pack:
+              subprocess.run(["git", "index-pack", "--stdin"], stdin=pack, stdout=subprocess.DEVNULL, check=True)
+          tree = meta["tree"]
+          if len(tree) != 40 or any(c not in "0123456789abcdef" for c in tree):
+              raise SystemExit("Invalid source tree")
+          if subprocess.check_output(["git", "cat-file", "-t", tree], text=True).strip() != "tree":
+              raise SystemExit("Missing source tree")
+          files = subprocess.check_output(["git", "ls-tree", "-r", "-z", tree]).split(b"\0")
+          if len(files) - 1 != meta["files"]:
+              raise SystemExit("Source file count mismatch")
+          subprocess.run(["git", "config", "user.name", "ProjectNoci"], check=True)
+          subprocess.run(["git", "config", "user.email", "352963465+projectannoci@users.noreply.github.com"], check=True)
+          parent = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
+          commit = subprocess.check_output(["git", "commit-tree", tree, "-p", parent, "-m", "Import Singularity kernel source for " + meta["device"]], text=True).strip()
+          subprocess.run(["git", "push", "origin", commit + ":refs/heads/main"], check=True)
+          print("Published", meta["device"], "source:", meta["files"], "files")
+          PY
