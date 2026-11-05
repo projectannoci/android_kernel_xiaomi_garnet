@@ -1,0 +1,27 @@
+Singularity v2
+Target: POCO X6 / garnet, AxionOS 2.9 Android 16
+Reference ROM: axion-2.9-NOESIS-20261024-OFFICIAL-VANILLA-garnet.zip
+
+Kernel: https://github.com/ZetyaWyn/android_kernel_common-5.10
+Commit: cbf716b7d13c220b120e66f70287ba488d40e2fb
+KernelSU Next: https://github.com/pershoot/KernelSU-Next
+Commit: d21e0a66c887ae4bc75b7c9f83e41761819ec09a
+Driver version: 33418 / v3.4.2
+SuSFS: https://gitlab.com/simonpunk/susfs4ksu
+Commit: eb95da080c76724c4962d0c62e9af3be37d9d439
+Kprofiles: https://github.com/beakthoven/Kprofiles
+Commit: 82441dbf8131527c90048f46be58ae9cdb463df3
+CPU boost and KGSL source: https://github.com/Lafactorial/android_kernel_xiaomi_sm7435
+Commit: 9271bbec9405c44245448b25f7d4cf7fd138b3c2
+Files: drivers/cpufreq/cpu_boost.c, include/linux/cpu_boost.h, CPU_BOOSTING Kconfig block
+
+Compiler: Android clang 21.0.0, r563880c, build 14054515
+Archive: https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/b5f16aee7b8af4c339972027e91e7e793c2e55d9/clang-r563880c.tar.gz
+Host build dependencies: make gcc flex bison bc m4 libssl-dev libelf-dev zip
+Set TOOLCHAIN_DIR to the extracted compiler directory, then run ./build.sh.
+
+Baseline: Singularity v1 #1; boot-confirmed repair lineage retained. No core rebase.
+Release packaging: boot-only AnyKernel flow. Only the compiled core Image is installed. No vendor module, DTB or vendor partition payload is distributed.
+Optional downstream KGSL source and its compatibility headers remain in the source tree for provenance; CONFIG_QCOM_KGSL=m means that code is not linked into Image. The KGSL powerlevel/bus policy and ZRAM compressor changes have been reverted; these unlinked sources cannot alter the distributed Image.
+The final Image and effective core config are the same compiled v2 outputs. build.sh builds Image only and stages the boot-only package.
+Host requirements: Python 3, standard kernel build dependencies above. Vendor API records are retained only for static audit.

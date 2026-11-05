@@ -1,0 +1,15 @@
+Singularity v2 | garnet
+Base: Linux 5.10.272 / Singularity v1 boot-confirmed repair lineage.
+
+- Restore v1 boot-only AnyKernel installation flow.
+- Remove vendor ramdisk/module replacement and DTB modification.
+- mq-deadline: 50 ms read expiry, 200 ms write expiry; FIFO batch 8 retained.
+- BBR default congestion control; fq_codel retained.
+- Default vm_swappiness: 0.
+- Retain 120 ms CPU input/render boost, LITTLE 1958 MHz / big 2400 MHz presets.
+- Retain core devfreq render boost, bounded by active limits and available OPPs.
+- Retain KernelSU Next 3.4.2 (33418), SuSFS 2.3.0, Kprofiles mode 3, PREEMPT and HZ250.
+
+GPU default powerlevel, GPU bus lock and ZRAM compressor changes are excluded.
+The compiled core Image is unchanged from v2; this release corrects packaging.
+Device boot test of this package is pending.

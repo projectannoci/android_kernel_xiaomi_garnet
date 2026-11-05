@@ -1,0 +1,9 @@
+Singularity v2 / garnet / boot-only package
+Core Image: previously compiled Linux 5.10.272-Singularity-v2 #2; byte-identical to the Image from v2. No downloaded replacement kernel and no renaming of a stock Image.
+Base: previous Singularity boot-confirmed repair lineage, no rebase.
+Installer: v1 boot-only flow, active-slot boot partition. Ramdisk path uses unpack_ramdisk/write_boot; no-ramdisk path uses flash_boot.
+No vendor_boot, vendor_dlkm, module, DTB or DTBO payload and no custom multi-partition stage, backup or hash guard.
+Host installer fixtures cover valid ramdisk, no ramdisk, unsupported kernel/header and missing payload. Failure cases stop before writing.
+Core arithmetic tests cover boost bounds, suspend state and OPP selection.
+Original Image build and core API audit passed before packaging correction. Core imports/exports and module ABI policy are unchanged. Stock module CRC/CFI tolerance remains the baseline maintainer policy.
+Physical boot of this corrected ZIP remains untested. No FPS improvement is claimed without device measurement.

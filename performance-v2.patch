@@ -1,0 +1,119 @@
+--- a/arch/arm64/Kconfig
++++ b/arch/arm64/Kconfig
+@@ -2187,3 +2187,10 @@
+ if CRYPTO
+ source "arch/arm64/crypto/Kconfig"
+ endif
++
++config GARNET_PERFORMANCE
++	bool "Garnet performance policy"
++	depends on ARCH_QCOM
++	default n
++	help
++	  Build the Garnet CPU/GPU, memory, I/O and network policy.
+--- a/block/mq-deadline-main.c
++++ b/block/mq-deadline-main.c
+@@ -28,8 +28,10 @@
+ /*
+  * See Documentation/block/deadline-iosched.rst
+  */
+-static const int read_expire = HZ / 10;  /* max time before a read is submitted. */
+-static const int write_expire = HZ; /* ditto for writes, these limits are SOFT! */
++static const int read_expire = IS_ENABLED(CONFIG_GARNET_PERFORMANCE) ?
++	(50 * HZ + 999) / 1000 : HZ / 10;  /* max time before a read is submitted. */
++static const int write_expire = IS_ENABLED(CONFIG_GARNET_PERFORMANCE) ?
++	(200 * HZ + 999) / 1000 : HZ; /* ditto for writes, these limits are SOFT! */
+ /*
+  * Time after which to dispatch lower priority requests even if higher
+  * priority requests are pending.
+--- a/drivers/gpu/Makefile
++++ b/drivers/gpu/Makefile
+@@ -6,3 +6,5 @@
+ obj-y			+= drm/ vga/
+ obj-$(CONFIG_IMX_IPUV3_CORE)	+= ipu-v3/
+ obj-$(CONFIG_TRACE_GPU_MEM)		+= trace/
++
++obj-$(CONFIG_QCOM_KGSL) += msm/
+--- a/drivers/video/Kconfig
++++ b/drivers/video/Kconfig
+@@ -48,3 +48,5 @@
+ 
+ 
+ endmenu
++
++source "drivers/gpu/msm/Kconfig"
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -179,7 +179,7 @@
+ /*
+  * From 0 .. 200.  Higher means more swappy.
+  */
+-int vm_swappiness = 60;
++int vm_swappiness = IS_ENABLED(CONFIG_GARNET_PERFORMANCE) ? 0 : 60;
+ 
+ struct kcompress_t kcompress_data[MAX_NUMNODES];
+ 
+--- a/net/ipv4/tcp_cong.c
++++ b/net/ipv4/tcp_cong.c
+@@ -252,7 +252,7 @@
+ static int __init tcp_congestion_default(void)
+ {
+ 	return tcp_set_default_congestion_control(&init_net,
+-						  CONFIG_DEFAULT_TCP_CONG);
++						  IS_ENABLED(CONFIG_GARNET_PERFORMANCE) ? "bbr" : CONFIG_DEFAULT_TCP_CONG);
+ }
+ late_initcall(tcp_congestion_default);
+ 
+--- a/singularity.config
++++ b/singularity.config
+@@ -26,7 +26,7 @@
+ CONFIG_INIT_ENV_ARG_LIMIT=32
+ # CONFIG_COMPILE_TEST is not set
+ CONFIG_WERROR=y
+-CONFIG_LOCALVERSION="-Singularity-v1-ProjectNoci-1"
++CONFIG_LOCALVERSION="-Singularity-v2"
+ # CONFIG_LOCALVERSION_AUTO is not set
+ CONFIG_BUILD_SALT=""
+ CONFIG_DEFAULT_INIT=""
+@@ -704,6 +704,7 @@
+ CONFIG_CRYPTO_POLY1305_NEON=y
+ # CONFIG_CRYPTO_NHPOLY1305_NEON is not set
+ # CONFIG_CRYPTO_AES_ARM64_BS is not set
++CONFIG_GARNET_PERFORMANCE=y
+ CONFIG_CPU_MITIGATIONS=y
+ 
+ #
+@@ -1074,11 +1075,11 @@
+ # CONFIG_DEFAULT_CUBIC is not set
+ # CONFIG_DEFAULT_HTCP is not set
+ # CONFIG_DEFAULT_WESTWOOD is not set
+-# CONFIG_DEFAULT_BBR is not set
+-CONFIG_DEFAULT_BBRPLUS=y
++CONFIG_DEFAULT_BBR=y
++# CONFIG_DEFAULT_BBRPLUS is not set
+ # CONFIG_DEFAULT_BBR3 is not set
+ # CONFIG_DEFAULT_RENO is not set
+-CONFIG_DEFAULT_TCP_CONG="bbrplus"
++CONFIG_DEFAULT_TCP_CONG="bbr"
+ # CONFIG_TCP_MD5SIG is not set
+ CONFIG_IPV6=y
+ CONFIG_IPV6_ROUTER_PREF=y
+@@ -4071,6 +4072,18 @@
+ CONFIG_HDMI=y
+ # end of Graphics support
+ 
++CONFIG_QCOM_KGSL=m
++# CONFIG_DEVFREQ_GOV_QCOM_ADRENO_TZ is not set
++# CONFIG_QCOM_KGSL_FENCE_TRACE is not set
++CONFIG_QCOM_ADRENO_DEFAULT_GOVERNOR="msm-adreno-tz"
++# CONFIG_QCOM_KGSL_CORESIGHT is not set
++CONFIG_QCOM_KGSL_IOCOHERENCY_DEFAULT=y
++CONFIG_QCOM_KGSL_IDLE_TIMEOUT=58
++CONFIG_QCOM_KGSL_CONTEXT_DEBUG=y
++CONFIG_QCOM_KGSL_SORT_POOL=y
++# CONFIG_QCOM_KGSL_QDSS_STM is not set
++CONFIG_QCOM_KGSL_USE_SHMEM=y
++CONFIG_QCOM_KGSL_PROCESS_RECLAIM=y
+ CONFIG_SOUND=y
+ CONFIG_SND=y
+ CONFIG_SND_TIMER=y
